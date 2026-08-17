@@ -119,7 +119,6 @@
       border: 1px solid rgba(255, 102, 0, 0.25);
     }
   </style>
-  <!-- Firebase App & Auth SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 </head>
@@ -132,7 +131,8 @@
       <div id="targetAccount" class="subtitle">Set your new secure password</div>
     </div>
 
-    <form id="resetForm" style="display: none;">
+    <!-- Form is rendered and visible immediately -->
+    <form id="resetForm">
       <div class="form-group">
         <label for="newPassword">New Password</label>
         <input type="password" id="newPassword" placeholder="Minimum 6 characters" minlength="6" required />
@@ -162,24 +162,12 @@
     const form = document.getElementById('resetForm');
     const statusMsg = document.getElementById('statusMsg');
     const submitBtn = document.getElementById('submitBtn');
-    const targetAccount = document.getElementById('targetAccount');
 
     if (!oobCode) {
+      form.style.display = 'none';
       statusMsg.className = 'message error';
       statusMsg.style.display = 'block';
       statusMsg.textContent = 'Invalid or missing authentication token in the link.';
-    } else {
-      auth.verifyPasswordResetCode(oobCode)
-        .then((email) => {
-          targetAccount.textContent = `Resetting password for: ${email}`;
-          form.style.display = 'block';
-          statusMsg.style.display = 'none';
-        })
-        .catch((error) => {
-          statusMsg.className = 'message error';
-          statusMsg.style.display = 'block';
-          statusMsg.textContent = 'This reset link has expired or has already been used. Please request a new link.';
-        });
     }
 
     form.addEventListener('submit', function(e) {
@@ -196,6 +184,7 @@
 
       submitBtn.disabled = true;
       submitBtn.textContent = 'Updating...';
+      statusMsg.style.display = 'none';
 
       auth.confirmPasswordReset(oobCode, p1)
         .then(() => {
@@ -209,7 +198,11 @@
           submitBtn.textContent = 'Update Password';
           statusMsg.className = 'message error';
           statusMsg.style.display = 'block';
-          statusMsg.textContent = err.message || 'Failed to update password.';
+          if (err.code === 'auth/invalid-action-code') {
+            statusMsg.textContent = 'This reset link has expired or has already been used. Please request a new link.';
+          } else {
+            statusMsg.textContent = err.message || 'Failed to update password.';
+          }
         });
     });
   </script>
